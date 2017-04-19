@@ -23,7 +23,6 @@ import co.cask.http.AbstractHttpHandler;
 import co.cask.http.HttpHandler;
 import co.cask.http.HttpResponder;
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.jboss.netty.handler.codec.http.HttpResponseStatus;
 
@@ -33,7 +32,6 @@ import javax.ws.rs.Path;
 /**
  * {@link HttpHandler} for getting info about upgrade progress, if applicable.
  */
-@Singleton
 @Beta
 @Path(Constants.Gateway.API_VERSION_3 + "/system/upgrade")
 public class UpgradeHttpHandler extends AbstractHttpHandler {
