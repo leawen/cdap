@@ -19,6 +19,7 @@
 package org.apache.hadoop.mapred;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.conf.Configuration;
@@ -559,7 +560,8 @@ public class LocalJobRunnerWithFix implements ClientProtocol {
           LOG.warn("Job {} was killed", id, t);
         } else {
           this.status.setRunState(JobStatus.FAILED);
-          LOG.error("Job {} failed", id, t);
+          LOG.error("Job Id '{}' failed. Error: ", id.getId(), ExceptionUtils.getRootCause(t));
+          LOG.debug("Job Id '{}' failed. Complete Error: ", id.getId(), t);
         }
 
         JobEndNotifier.localRunnerNotification(job, status);
