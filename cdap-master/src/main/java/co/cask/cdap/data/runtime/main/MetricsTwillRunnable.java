@@ -89,7 +89,6 @@ public class MetricsTwillRunnable extends AbstractMasterTwillRunnable {
 
   @Override
   public void addServices(List<? super Service> services) {
-    services.add(injector.getInstance(AuthorizationEnforcementService.class));
     services.add(injector.getInstance(MetricsQueryService.class));
   }
 

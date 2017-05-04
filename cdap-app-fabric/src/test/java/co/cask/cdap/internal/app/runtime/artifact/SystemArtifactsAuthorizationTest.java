@@ -97,8 +97,6 @@ public class SystemArtifactsAuthorizationTest {
     artifactRepository = injector.getInstance(ArtifactRepository.class);
     AuthorizerInstantiator instantiatorService = injector.getInstance(AuthorizerInstantiator.class);
     authorizer = instantiatorService.get();
-    authEnforcerService = injector.getInstance(AuthorizationEnforcementService.class);
-    authEnforcerService.startAndWait();
     instance = new InstanceId(cConf.get(Constants.INSTANCE_NAME));
     namespaceAdmin = injector.getInstance(NamespaceAdmin.class);
   }
@@ -170,7 +168,6 @@ public class SystemArtifactsAuthorizationTest {
     authorizer.revoke(instance);
     authorizer.revoke(NamespaceId.SYSTEM);
     Assert.assertEquals(Collections.emptySet(), authorizer.listPrivileges(ALICE));
-    authEnforcerService.stopAndWait();
     SecurityRequestContext.setUserId(OLD_USER_ID);
   }
 

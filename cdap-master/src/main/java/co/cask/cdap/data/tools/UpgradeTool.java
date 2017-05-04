@@ -276,7 +276,6 @@ public class UpgradeTool {
                                           "Currently configured as: %s", cConf.get(Constants.Zookeeper.QUORUM)));
     LOG.info("Starting Transaction Service...");
     txService.startAndWait();
-    authorizationService.startAndWait();
     LOG.info("Initializing Dataset Framework...");
     initializeDSFramework(cConf, dsFramework, includeNewDatasets);
     LOG.info("Building and uploading new HBase coprocessors...");
@@ -290,7 +289,6 @@ public class UpgradeTool {
     try {
       txService.stopAndWait();
       zkClientService.stopAndWait();
-      authorizationService.stopAndWait();
     } catch (Throwable e) {
       LOG.error("Exception while trying to stop upgrade process", e);
       Runtime.getRuntime().halt(1);

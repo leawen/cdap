@@ -149,7 +149,7 @@ public abstract class DatasetServiceTestBase {
 
   @AfterClass
   public static void tearDown() throws Exception {
-    Services.chainStop(service, opExecutorService, txManager, authEnforcementService);
+    Services.chainStop(service, opExecutorService, txManager);
     namespaceAdmin.delete(NamespaceId.DEFAULT);
     Locations.deleteQuietly(locationFactory.create(NamespaceId.DEFAULT.getNamespace()));
   }
@@ -181,8 +181,6 @@ public abstract class DatasetServiceTestBase {
       });
 
     AuthorizationEnforcer authEnforcer = injector.getInstance(AuthorizationEnforcer.class);
-    authEnforcementService = injector.getInstance(AuthorizationEnforcementService.class);
-    authEnforcementService.startAndWait();
 
     AuthenticationContext authenticationContext = injector.getInstance(AuthenticationContext.class);
 

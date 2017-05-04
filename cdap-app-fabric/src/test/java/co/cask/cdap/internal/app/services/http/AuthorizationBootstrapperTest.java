@@ -126,8 +126,6 @@ public class AuthorizationBootstrapperTest {
     discoveryServiceClient = injector.getInstance(DiscoveryServiceClient.class);
     txManager = injector.getInstance(TransactionManager.class);
     datasetService = injector.getInstance(DatasetService.class);
-    authorizationEnforcementService = injector.getInstance(AuthorizationEnforcementService.class);
-    authorizationEnforcementService.startAndWait();
     systemArtifactLoader = injector.getInstance(SystemArtifactLoader.class);
     authorizationBootstrapper = injector.getInstance(AuthorizationBootstrapper.class);
     artifactRepository = injector.getInstance(ArtifactRepository.class);
@@ -214,7 +212,6 @@ public class AuthorizationBootstrapperTest {
   public static void teardown() {
     datasetService.stopAndWait();
     txManager.stopAndWait();
-    authorizationEnforcementService.stopAndWait();
   }
 
   private void waitForService(final AbstractService service) throws Exception {

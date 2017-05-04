@@ -180,7 +180,6 @@ public abstract class AbstractProgramTwillRunnable<T extends ProgramRunner> impl
       coreServices.add(injector.getInstance(BrokerService.class));
       coreServices.add(injector.getInstance(MetricsCollectionService.class));
       coreServices.add(injector.getInstance(StreamCoordinatorClient.class));
-      coreServices.add(injector.getInstance(AuthorizationEnforcementService.class));
 
       // Initialize log appender
       logAppenderInitializer = injector.getInstance(LogAppenderInitializer.class);

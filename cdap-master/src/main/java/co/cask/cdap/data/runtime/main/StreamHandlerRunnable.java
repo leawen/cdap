@@ -98,7 +98,6 @@ public class StreamHandlerRunnable extends AbstractMasterTwillRunnable {
 
   @Override
   protected void addServices(List<? super Service> services) {
-    services.add(injector.getInstance(AuthorizationEnforcementService.class));
     services.add(injector.getInstance(StreamHttpService.class));
     services.add(injector.getInstance(StreamService.class));
   }

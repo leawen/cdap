@@ -235,7 +235,6 @@ public class StandaloneMain {
     authorizationBootstrapper.run();
     txService.startAndWait();
     metricsCollectionService.startAndWait();
-    authorizationEnforcementService.startAndWait();
     datasetService.startAndWait();
     serviceStore.startAndWait();
     streamService.startAndWait();
@@ -318,7 +317,6 @@ public class StandaloneMain {
       appFabricServer.stopAndWait();
       // all programs are stopped: dataset service, metrics, transactions can stop now
       datasetService.stopAndWait();
-      authorizationEnforcementService.stopAndWait();
       metricsQueryService.stopAndWait();
       txService.stopAndWait();
 

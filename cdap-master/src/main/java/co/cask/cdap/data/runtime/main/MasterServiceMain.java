@@ -635,7 +635,7 @@ public class MasterServiceMain extends DaemonMain {
       injector.getInstance(AuthorizationBootstrapper.class).run();
       services.add(getAndStart(injector, KafkaClientService.class));
       services.add(getAndStart(injector, MetricsCollectionService.class));
-      services.add(getAndStart(injector, AuthorizationEnforcementService.class));
+
       services.add(getAndStart(injector, OperationalStatsService.class));
       ServiceStore serviceStore = getAndStart(injector, ServiceStore.class);
       services.add(serviceStore);

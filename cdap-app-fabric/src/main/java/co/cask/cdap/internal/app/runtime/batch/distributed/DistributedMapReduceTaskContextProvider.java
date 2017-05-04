@@ -71,8 +71,7 @@ public final class DistributedMapReduceTaskContextProvider extends MapReduceTask
     try {
       List<ListenableFuture<State>> startFutures = Services.chainStart(zkClientService,
                                                                        kafkaClientService,
-                                                                       metricsCollectionService,
-                                                                       authorizationEnforcementService).get();
+                                                                       metricsCollectionService).get();
       // All services should be started
       for (ListenableFuture<State> future : startFutures) {
         Preconditions.checkState(future.get() == State.RUNNING, "Failed to start services: %s, %s, %s, %s",
@@ -103,8 +102,7 @@ public final class DistributedMapReduceTaskContextProvider extends MapReduceTask
       failure = e;
     }
     try {
-      Services.chainStop(metricsCollectionService, kafkaClientService, zkClientService,
-                         authorizationEnforcementService).get();
+      Services.chainStop(metricsCollectionService, kafkaClientService, zkClientService).get();
     } catch (Exception e) {
       if (failure != null) {
         failure.addSuppressed(e);

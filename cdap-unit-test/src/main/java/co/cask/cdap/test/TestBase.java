@@ -300,8 +300,6 @@ public class TestBase {
 
     authorizationBootstrapper = injector.getInstance(AuthorizationBootstrapper.class);
     authorizationBootstrapper.run();
-    authorizationEnforcementService = injector.getInstance(AuthorizationEnforcementService.class);
-    authorizationEnforcementService.startAndWait();
     txService = injector.getInstance(TransactionManager.class);
     txService.startAndWait();
     dsOpService = injector.getInstance(DatasetOpExecutor.class);
@@ -487,7 +485,6 @@ public class TestBase {
     datasetService.stopAndWait();
     dsOpService.stopAndWait();
     txService.stopAndWait();
-    authorizationEnforcementService.stopAndWait();
 
     if (messagingService instanceof Service) {
       ((Service) messagingService).startAndWait();

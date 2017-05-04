@@ -99,7 +99,6 @@ public final class MetricsProcessorTwillRunnable extends AbstractMasterTwillRunn
 
   @Override
   public void addServices(List<? super Service> services) {
-    services.add(injector.getInstance(AuthorizationEnforcementService.class));
     services.add(injector.getInstance(KafkaMetricsProcessorRuntimeService.class));
     services.add(injector.getInstance(MessagingMetricsProcessorRuntimeService.class));
     services.add(injector.getInstance(MetricsProcessorStatusService.class));

@@ -147,7 +147,6 @@ public class ExploreServiceTwillRunnable extends AbstractMasterTwillRunnable {
 
   @Override
   protected void addServices(List<? super Service> services) {
-    services.add(injector.getInstance(AuthorizationEnforcementService.class));
     services.add(injector.getInstance(ExploreExecutorService.class));
   }
 

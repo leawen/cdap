@@ -122,7 +122,6 @@ public class AppFabricTestHelper {
       if (configuration.getBoolean(Constants.Security.ENABLED) &&
         configuration.getBoolean(Constants.Security.Authorization.ENABLED)) {
         injector.getInstance(AuthorizationBootstrapper.class).run();
-        injector.getInstance(AuthorizationEnforcementService.class).startAndWait();
       }
       injector.getInstance(TransactionManager.class).startAndWait();
       injector.getInstance(DatasetOpExecutor.class).startAndWait();
