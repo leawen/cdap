@@ -36,23 +36,19 @@ public class DefaultPrivilegesManager implements PrivilegesManager {
   private static final Logger LOG = LoggerFactory.getLogger(DefaultPrivilegesManager.class);
 
   private final Authorizer delegateAuthorizer;
-  private final AuthorizationEnforcementService authorizationEnforcementService;
   private final PrivilegesFetcherProxyService privilegesFetcherProxyService;
 
   @Inject
   DefaultPrivilegesManager(AuthorizerInstantiator authorizerInstantiator,
-                           AuthorizationEnforcementService authorizationEnforcementService,
                            PrivilegesFetcherProxyService privilegesFetcherProxyService) {
     this.privilegesFetcherProxyService = privilegesFetcherProxyService;
     this.delegateAuthorizer = authorizerInstantiator.get();
-    this.authorizationEnforcementService = authorizationEnforcementService;
   }
 
   @Override
   public void grant(EntityId entity, final Principal principal, Set<Action> actions) throws Exception {
     delegateAuthorizer.grant(entity, principal, actions);
     Predicate<Principal> invalidationPredicate = createInvalidationPredicate(principal);
-    authorizationEnforcementService.invalidate(invalidationPredicate);
     privilegesFetcherProxyService.invalidate(invalidationPredicate);
 
   }
@@ -61,7 +57,6 @@ public class DefaultPrivilegesManager implements PrivilegesManager {
   public void revoke(EntityId entity, Principal principal, Set<Action> actions) throws Exception {
     delegateAuthorizer.revoke(entity, principal, actions);
     Predicate<Principal> invalidationPredicate = createInvalidationPredicate(principal);
-    authorizationEnforcementService.invalidate(invalidationPredicate);
     privilegesFetcherProxyService.invalidate(invalidationPredicate);
   }
 

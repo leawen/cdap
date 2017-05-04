@@ -62,7 +62,6 @@ import co.cask.cdap.proto.id.DatasetModuleId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.security.auth.context.AuthenticationContextModules;
 import co.cask.cdap.security.authorization.AuthorizationEnforcementModule;
-import co.cask.cdap.security.authorization.AuthorizationEnforcementService;
 import co.cask.cdap.security.authorization.AuthorizationTestModule;
 import co.cask.cdap.security.impersonation.DefaultImpersonator;
 import co.cask.cdap.security.impersonation.DefaultOwnerAdmin;
@@ -134,7 +133,6 @@ public abstract class DatasetServiceTestBase {
   protected static DatasetDefinitionRegistryFactory registryFactory;
   protected static Injector injector;
 
-  private static AuthorizationEnforcementService authEnforcementService;
   private static DiscoveryServiceClient discoveryServiceClient;
   private static DatasetOpExecutorService opExecutorService;
   private static DatasetService service;

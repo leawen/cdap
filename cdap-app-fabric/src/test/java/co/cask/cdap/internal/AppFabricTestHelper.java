@@ -62,7 +62,6 @@ import co.cask.cdap.proto.id.KerberosPrincipalId;
 import co.cask.cdap.proto.id.NamespaceId;
 import co.cask.cdap.proto.id.ProgramId;
 import co.cask.cdap.security.authorization.AuthorizationBootstrapper;
-import co.cask.cdap.security.authorization.AuthorizationEnforcementService;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;

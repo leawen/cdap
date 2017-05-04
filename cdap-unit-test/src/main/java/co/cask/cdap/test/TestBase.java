@@ -104,7 +104,6 @@ import co.cask.cdap.proto.security.Action;
 import co.cask.cdap.proto.security.Principal;
 import co.cask.cdap.security.authorization.AuthorizationBootstrapper;
 import co.cask.cdap.security.authorization.AuthorizationEnforcementModule;
-import co.cask.cdap.security.authorization.AuthorizationEnforcementService;
 import co.cask.cdap.security.authorization.AuthorizerInstantiator;
 import co.cask.cdap.security.authorization.InvalidAuthorizerException;
 import co.cask.cdap.security.guice.SecureStoreModules;
@@ -201,8 +200,6 @@ public class TestBase {
   private static AuthorizerInstantiator authorizerInstantiator;
   private static SecureStore secureStore;
   private static SecureStoreManager secureStoreManager;
-  private static AuthorizationEnforcementService authorizationEnforcementService;
-  private static AuthorizationBootstrapper authorizationBootstrapper;
   private static MessagingService messagingService;
   private static MessagingContext messagingContext;
   private static PreviewManager previewManager;
@@ -298,7 +295,7 @@ public class TestBase {
       ((Service) messagingService).startAndWait();
     }
 
-    authorizationBootstrapper = injector.getInstance(AuthorizationBootstrapper.class);
+    AuthorizationBootstrapper authorizationBootstrapper = injector.getInstance(AuthorizationBootstrapper.class);
     authorizationBootstrapper.run();
     txService = injector.getInstance(TransactionManager.class);
     txService.startAndWait();
