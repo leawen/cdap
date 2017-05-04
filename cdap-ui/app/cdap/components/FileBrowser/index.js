@@ -23,7 +23,6 @@ import moment from 'moment';
 import {Link} from 'react-router-dom';
 import FilePath from 'components/FileBrowser/FilePath';
 import {convertBytesToHumanReadable, HUMANREADABLESTORAGE_NODECIMAL} from 'services/helpers';
-import cookie from 'react-cookie';
 import T from 'i18n-react';
 import orderBy from 'lodash/orderBy';
 import IconSVG from 'components/IconSVG';
@@ -134,8 +133,6 @@ export default class FileBrowser extends Component {
     }
   }
   ingestFile(content) {
-    console.log('content', content);
-
     let namespace = NamespaceStore.getState().selectedNamespace;
 
     let params = {
@@ -151,11 +148,9 @@ export default class FileBrowser extends Component {
 
     MyDataPrepApi.readFile(params, null, headers)
       .subscribe((res) => {
-
         let workspaceId = res.values[0].id;
-        cookie.save('DATAPREP_WORKSPACE', workspaceId, { path: '/' });
 
-        let navigatePath = `${window.location.origin}/cdap/ns/${namespace}/dataprep`;
+        let navigatePath = `${window.location.origin}/cdap/ns/${namespace}/dataprep/${workspaceId}`;
         window.location.href = navigatePath;
       });
 

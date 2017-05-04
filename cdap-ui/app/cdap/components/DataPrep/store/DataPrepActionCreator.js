@@ -84,6 +84,7 @@ export function setWorkspace(workspaceId) {
         let requestBody = directiveRequestBodyCreator(directives);
 
         let workspaceUri = objectQuery(res, 'values', '0', 'properties', 'path');
+        let workspaceInfo = objectQuery(res, 'values', '0');
 
         MyDataPrepApi.execute(params, requestBody)
           .subscribe((response) => {
@@ -96,7 +97,8 @@ export function setWorkspace(workspaceId) {
                 headers: response.header,
                 directives,
                 workspaceId,
-                workspaceUri
+                workspaceUri,
+                workspaceInfo
               }
             });
           }, (err) => {

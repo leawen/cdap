@@ -17,7 +17,7 @@
 import React, { Component } from 'react';
 import IconSVG from 'components/IconSVG';
 import classnames from 'classnames';
-import {Route, Link, Redirect} from 'react-router-dom';
+import {Route, NavLink, Redirect} from 'react-router-dom';
 import FileBrowser from 'components/FileBrowser';
 import NamespaceStore from 'services/NamespaceStore';
 import T from 'i18n-react';
@@ -81,7 +81,7 @@ export default class DataPrepConnections extends Component {
 
         <div className="connections-menu">
           <div className="menu-item">
-            <Link
+            <NavLink
               to={`${baseLinkPath}/upload`}
               activeClassName="active"
             >
@@ -92,14 +92,14 @@ export default class DataPrepConnections extends Component {
               <span>
                 {T.translate(`${PREFIX}.upload`)}
               </span>
-            </Link>
+            </NavLink>
           </div>
 
           <div className="menu-item">
-            <Link
+            <NavLink
               to={`${baseLinkPath}/browser`}
               activeClassName="active"
-              isActive={(location) => {
+              isActive={(match, location) => {
                 let regex = `^${baseLinkPath}/browser?`;
                 return location.pathname.match(regex) || location.pathname === baseLinkPath;
               }}
@@ -111,7 +111,7 @@ export default class DataPrepConnections extends Component {
               <span>
                 {T.translate(`${PREFIX}.hdfs`)}
               </span>
-            </Link>
+            </NavLink>
           </div>
         </div>
       </div>
@@ -142,7 +142,7 @@ export default class DataPrepConnections extends Component {
           <Route path={`${BASEPATH}/upload`} component={UploadPlaceholder} />
         </div>
 
-        <Route exactly path={`${BASEPATH}`} component={RouteToHDFS} />
+        <Route exact path={`${BASEPATH}`} component={RouteToHDFS} />
       </div>
     );
   }

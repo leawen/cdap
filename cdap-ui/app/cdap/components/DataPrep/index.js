@@ -32,6 +32,11 @@ import {MyArtifactApi} from 'api/artifact';
 import {findHighestVersion} from 'services/VersionRange/VersionUtilities';
 import Version from 'services/VersionRange/Version';
 import {setWorkspace} from 'components/DataPrep/store/DataPrepActionCreator';
+import WorkspaceTabs from 'components/DataPrep/WorkspaceTabs';
+import {Link} from 'react-router-dom';
+import IconSVG from 'components/IconSVG';
+import classnames from 'classnames';
+
 require('./DataPrep.scss');
 
 /**
@@ -64,7 +69,7 @@ export default class DataPrep extends Component {
       DataPrepStore.dispatch({
         type: DataPrepActions.reset
       });
-      let workspaceId = this.props.singleWorkspaceMode ? this.props.workspaceId : cookie.load('DATAPREP_WORKSPACE');
+      let workspaceId = this.props.workspaceId ? this.props.workspaceId : cookie.load('DATAPREP_WORKSPACE');
       this.setCurrentWorkspace(workspaceId);
       setTimeout(() => {
         this.setState({
@@ -75,7 +80,28 @@ export default class DataPrep extends Component {
   }
 
   componentWillMount() {
-    let workspaceId = this.props.singleWorkspaceMode ? this.props.workspaceId : cookie.load('DATAPREP_WORKSPACE');
+    this.init(this.props);
+  }
+
+  componentWillReceiveProps(nextProps) {
+    if (this.props.workspaceId !== nextProps.workspaceId) {
+      this.init(nextProps);
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.props.onSubmit) {
+      let workspaceId = DataPrepStore.getState().dataprep.workspaceId;
+      this.props.onSubmit({workspaceId});
+    }
+    DataPrepStore.dispatch({
+      type: DataPrepActions.reset
+    });
+    this.eventEmitter.off('DATAPREP_BACKEND_DOWN', this.toggleBackendDown);
+  }
+
+  init(props) {
+    let workspaceId = props.workspaceId ? props.workspaceId : cookie.load('DATAPREP_WORKSPACE');
     let namespace = NamespaceStore.getState().selectedNamespace;
 
     MyArtifactApi.list({ namespace })
@@ -99,7 +125,7 @@ export default class DataPrep extends Component {
           });
         }
 
-        if (this.props.singleWorkspaceMode) {
+        if (props.singleWorkspaceMode) {
           DataPrepStore.dispatch({
             type: DataPrepActions.setWorkspaceMode,
             payload: {
@@ -109,17 +135,6 @@ export default class DataPrep extends Component {
         }
       });
       this.setCurrentWorkspace(workspaceId);
-  }
-
-  componentWillUnmount() {
-    if (this.props.onSubmit) {
-      let workspaceId = DataPrepStore.getState().dataprep.workspaceId;
-      this.props.onSubmit({workspaceId});
-    }
-    DataPrepStore.dispatch({
-      type: DataPrepActions.reset
-    });
-    this.eventEmitter.off('DATAPREP_BACKEND_DOWN', this.toggleBackendDown);
   }
 
   setCurrentWorkspace(workspaceId) {
@@ -161,6 +176,16 @@ export default class DataPrep extends Component {
     );
   }
 
+  renderTabs() {
+    if (this.props.singleWorkspaceMode) { return null; }
+
+    return (
+      <WorkspaceTabs
+        workspaceId={this.props.workspaceId}
+      />
+    );
+  }
+
   onSubmitToListener({workspaceId, directives, schema}) {
     if (!this.props.onSubmit) {
       return;
@@ -170,6 +195,34 @@ export default class DataPrep extends Component {
       directives,
       schema: schema
     });
+  }
+
+  renderTogglePanel() {
+    if (this.props.singleWorkspaceMode) {
+      return (
+        <div className="panel-toggle float-xs-left text-xs-center">
+          <span className="panel-button">
+            <IconSVG
+              name="icon-chevron-left"
+            />
+          </span>
+        </div>
+      );
+    }
+    let namespace = NamespaceStore.getState().selectedNamespace;
+
+    return (
+      <div className="panel-toggle float-xs-left text-xs-center">
+        <Link
+          to={`/ns/${namespace}/connections`}
+          className="panel-button"
+        >
+          <IconSVG
+            name="icon-chevron-left"
+          />
+        </Link>
+      </div>
+    );
   }
 
   render() {
@@ -186,13 +239,23 @@ export default class DataPrep extends Component {
     }
 
     return (
-      <div className="dataprep-container">
+      <div className={classnames('dataprep-container', {
+        'single-workspace': this.props.singleWorkspaceMode
+      })}>
         <DataPrepErrorAlert />
-        <DataPrepTopPanel
-          singleWorkspaceMode={this.props.singleWorkspaceMode}
-          workspaceId={this.props.workspaceId}
-          onSubmit={this.onSubmitToListener.bind(this)}
-        />
+
+        <div className="top-section clearfix">
+          {this.renderTogglePanel()}
+
+          <div className="top-section-content float-xs-left">
+            {this.renderTabs()}
+
+            <DataPrepTopPanel
+              singleWorkspaceMode={this.props.singleWorkspaceMode}
+              onSubmit={this.onSubmitToListener.bind(this)}
+            />
+          </div>
+        </div>
 
         <div className="row dataprep-body">
           <div className="dataprep-main col-xs-9">

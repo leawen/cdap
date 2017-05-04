@@ -32,7 +32,8 @@ const defaultInitialState = {
   directives: [],
   higherVersion: null,
   loading: false,
-  singleWorkspaceMode: false
+  singleWorkspaceMode: false,
+  workspaceInfo: null
 };
 
 const errorInitialState = {
@@ -73,7 +74,8 @@ const dataprep = (state = defaultInitialState, action = defaultAction) => {
         data: action.payload.data || [],
         initialized: true,
         loading: false,
-        selectedHeaders: []
+        selectedHeaders: [],
+        workspaceInfo: action.payload.workspaceInfo
       });
       break;
     case DataPrepActions.setSelectedHeaders:
