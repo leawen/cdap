@@ -25,7 +25,10 @@ require('./DataPrepTable.scss');
 import {execute} from 'components/DataPrep/store/DataPrepActionCreator';
 import TextboxOnValium from 'components/TextboxOnValium';
 import WarningContainer from 'components/WarningContainer';
+import ColumnHighlighter from 'components/DataPrep/ColumnHighlighter';
+import isNil from 'lodash/isNil';
 import T from 'i18n-react';
+
 export default class DataPrepTable extends Component {
   constructor(props) {
     super(props);
@@ -241,8 +244,14 @@ export default class DataPrepTable extends Component {
         </div>
       );
     }
+    let {highlightColumns} = DataPrepStore.getState().dataprep;
     return (
-      <div className="dataprep-table" id="dataprep-table-id">
+      <div className={
+          classnames("dataprep-table", {
+            'column-highlighted': !isNil(highlightColumns.directive)
+          })
+        } id="dataprep-table-id">
+        <ColumnHighlighter />
         <table className="table table-bordered">
           <thead className="thead-inverse">
             {
