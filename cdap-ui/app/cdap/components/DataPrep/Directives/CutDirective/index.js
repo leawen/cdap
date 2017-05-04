@@ -16,9 +16,13 @@
 
 import React, {Component, PropTypes} from 'react';
 import DataPrepStore from 'components/DataPrep/store';
+import classnames from 'classnames';
+import shortid from 'shortid';
+import Rx from 'rx';
+
 require('../../DataPrepTable/DataPrepTable.scss');
 require('./CutDirective.scss');
-const HEIGHT_OF_THEADER = 41;
+const cellHighlightClassname = 'cl-highlight';
 
 export default class CutDirective extends Component {
   constructor(props) {
@@ -36,42 +40,97 @@ export default class CutDirective extends Component {
       });
     }
   }
+  componentDidMount() {
+    this.documentClick$ = Rx.DOM.fromEvent(document.body, 'click', false)
+      .subscribe((e) => {
+        if (e.target.className.indexOf(cellHighlightClassname) === -1) {
+          if (this.props.onClose) {
+            this.props.onClose();
+          }
+        }
+      });
+  }
+  componentWillUnmount() {
+    if (this.documentClick$) {
+      this.documentClick$.dispose();
+    }
+  }
   render() {
-    let {width, left, right, top, bottom} = this.state.columnDimension;
-    let {data} = DataPrepStore.getState().dataprep;
+    let {data, headers} = DataPrepStore.getState().dataprep;
     let column = this.props.columns[0];
-    data = data.map(d => d[column]);
-    let divStyles = {
-      width: `${width}px`,
-      right: `${right}px`,
-      left: `${left}px`,
-      top: `${top}px`,
-      bottom: `${bottom}px`,
-      position: 'fixed'
+
+    const renderTableCell = (row, head, highlightColumn) => {
+      if (head !== highlightColumn) {
+        return (
+          <td
+            key={shortid.generate()}
+            className="gray-out"
+          >
+            <div className="gray-out">
+              {row[head]}
+            </div>
+          </td>
+        );
+      }
+      return (
+        <td
+          key={shortid.generate()}
+          className={cellHighlightClassname}
+        >
+          <div
+            className={cellHighlightClassname}
+          >
+            {row[head]}
+          </div>
+        </td>
+      );
     };
-    let {height: heightOfTableBody} = document.getElementById('dataprep-table-id').getBoundingClientRect();
     return (
       <div
-        style={divStyles}
+        id="cut-directive"
         className="cut-directive dataprep-table"
       >
         <table className="table table-bordered">
           <colgroup>
-            <col />
+            {
+              headers.map(head => {
+                return (
+                  <col className={classnames({
+                    "highlight-column": head === column
+                  })} />
+                );
+              })
+            }
           </colgroup>
           <thead className="thead-inverse">
             <tr>
-              <th>
-                {column}
-              </th>
+              {
+                headers.map( head => {
+                  return (
+                    <th className={classnames({
+                      'gray-out': head !== column
+                    })}>
+                      <div className={classnames({
+                          'gray-out': head !== column
+                        })}>
+                        {head}
+                      </div>
+                    </th>
+                  );
+                })
+              }
             </tr>
           </thead>
-          <tbody style={{height: heightOfTableBody - HEIGHT_OF_THEADER}}>
+          <tbody>
               {
-                data.map((d, i) => {
+                data.map((row, i) => {
                   return (
                     <tr key={i}>
-                      <td> {d} </td>
+                      {
+                        headers.map((head) => {
+                          return renderTableCell(row, head, column);
+                        })
+                      }
                     </tr>
                   );
                 })
@@ -84,5 +143,6 @@ export default class CutDirective extends Component {
 }
 
 CutDirective.propTypes = {
-  columns: PropTypes.arrayOf(PropTypes.string)
+  columns: PropTypes.arrayOf(PropTypes.string),
+  onClose: PropTypes.func
 };

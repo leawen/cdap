@@ -33,7 +33,7 @@ export default class ColumnHighlighter extends Component {
     this.state = {
       highlightColumns: highlightColumns
     };
-    this.hideColumnHighlight = this.hideColumnHighlight;
+    this.hideColumnHighlight = this.hideColumnHighlight.bind(this);
   }
   componentDidMount() {
     this.datastoreSubscription = DataPrepStore.subscribe(() => {
@@ -76,14 +76,10 @@ export default class ColumnHighlighter extends Component {
     }
 
     return (
-      <div>
-        <div
-          className="column-highlighter"
-          onClick={this.hideColumnHighlight}
-        >
-        </div>
+      <div className="dataprep-column-highlight">
         <Tag
           columns={columns}
+          onClose={this.hideColumnHighlight}
         />
       </div>
     );

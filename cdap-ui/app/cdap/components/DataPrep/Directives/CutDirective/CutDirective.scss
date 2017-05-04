@@ -13,27 +13,22 @@
  * License for the specific language governing permissions and limitations under
  * the License.
 */
-@import '../../DataPrepTable/DataPrepTable.scss';
 
 .cut-directive {
   z-index: 2001;
 
   &.dataprep-table {
-    col {
-      background-color: lightblue;
-    }
+    height: 100%;
     table {
-      tbody {
-        display: block;
-        overflow-y: auto;
-        tr {
-          display: flex;
-          flex: 1 auto;
-          td {
-            display: flex;
-            height: $height-of-table-cell;
-            flex: 1 auto;
-          }
+      colgroup {
+        col.highlight-column {
+          background-color: lightblue;
+        }
+      }
+      td,
+      th {
+        &.gray-out {
+          color: #9e9d9d;
         }
       }
     }

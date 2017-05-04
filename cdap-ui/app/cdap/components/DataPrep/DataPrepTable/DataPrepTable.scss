@@ -19,11 +19,6 @@ $selected-header-bg-color: #3498db;
 
 $border-and-selected-color: #dbdbdb;
 $header-bg-color: #eeeeee;
-// FIXME: This is needed for highlight column behavior.
-// In highlight column mode we render a new table that is positioned right above the current column
-// To make the cell heights consistent between these tables we need to fix on a height.
-// We can do better.
-$height-of-table-cell: 43px;
 
 .dataprep-container {
   .dataprep-table {
@@ -34,6 +29,9 @@ $height-of-table-cell: 43px;
 
     &.column-highlighted {
       overflow: hidden;
+      > .table.table-bordered {
+        display: none;
+      }
     }
 
     &.empty { padding-top: 15px; }
@@ -54,7 +52,6 @@ $height-of-table-cell: 43px;
         tr {
           td {
             white-space: nowrap;
-            height: $height-of-table-cell;
           }
         }
       }
