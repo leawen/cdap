@@ -19,6 +19,7 @@ package co.cask.cdap.internal.app.runtime.schedule;
 import co.cask.cdap.internal.schedule.constraint.Constraint;
 import co.cask.cdap.internal.schedule.trigger.Trigger;
 import co.cask.cdap.proto.id.ProgramId;
+import co.cask.cdap.proto.id.ScheduleId;
 import com.google.common.base.Objects;
 
 import java.util.List;
@@ -70,6 +71,10 @@ public class ProgramSchedule {
 
   public List<Constraint> getConstraints() {
     return constraints;
+  }
+
+  public ScheduleId getScheduleId() {
+    return programId.getParent().schedule(name);
   }
 
   @Override

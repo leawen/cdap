@@ -24,13 +24,11 @@ import co.cask.cdap.api.dataset.lib.CloseableIterator;
 import co.cask.cdap.api.messaging.Message;
 import co.cask.cdap.api.messaging.MessageFetcher;
 import co.cask.cdap.api.messaging.TopicNotFoundException;
-import co.cask.cdap.app.store.Store;
 import co.cask.cdap.common.ServiceUnavailableException;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.common.logging.LogSamplers;
 import co.cask.cdap.common.logging.Loggers;
-import co.cask.cdap.common.namespace.NamespaceQueryAdmin;
 import co.cask.cdap.common.service.RetryStrategy;
 import co.cask.cdap.data.dataset.SystemDatasetInstantiator;
 import co.cask.cdap.data2.datafabric.dataset.DatasetsUtil;
@@ -40,16 +38,17 @@ import co.cask.cdap.data2.transaction.Transactions;
 import co.cask.cdap.data2.transaction.TxCallable;
 import co.cask.cdap.internal.app.runtime.messaging.MultiThreadMessagingContext;
 import co.cask.cdap.internal.app.runtime.schedule.ProgramSchedule;
-import co.cask.cdap.internal.app.runtime.schedule.ScheduleTaskRunner;
+import co.cask.cdap.internal.app.runtime.schedule.queue.Job;
+import co.cask.cdap.internal.app.runtime.schedule.queue.JobQueueDataset;
+import co.cask.cdap.internal.app.runtime.schedule.queue.SimpleJob;
 import co.cask.cdap.internal.app.runtime.schedule.store.ProgramScheduleStoreDataset;
 import co.cask.cdap.internal.app.runtime.schedule.store.Schedulers;
-import co.cask.cdap.internal.app.services.ProgramLifecycleService;
-import co.cask.cdap.internal.app.services.PropertiesResolver;
 import co.cask.cdap.messaging.MessagingService;
 import co.cask.cdap.proto.Notification;
 import co.cask.cdap.proto.id.DatasetId;
 import co.cask.cdap.proto.id.NamespaceId;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -65,11 +64,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Deque;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -78,7 +74,7 @@ import javax.annotation.Nullable;
 /**
  * Subscribe to notification TMS topic and update schedules in schedule store and job queue
  */
-public class NotificationSubscriberService extends AbstractExecutionThreadService {
+class NotificationSubscriberService extends AbstractExecutionThreadService {
   private static final Logger LOG = LoggerFactory.getLogger(NotificationSubscriberService.class);
   // Sampling log only log once per 10000
   private static final Logger SAMPLING_LOG = Loggers.sampling(LOG, LogSamplers.limitRate(10000));
@@ -88,32 +84,20 @@ public class NotificationSubscriberService extends AbstractExecutionThreadServic
   private final Transactional transactional;
   private final MultiThreadMessagingContext messagingContext;
   private final DatasetFramework datasetFramework;
-  private final Store store;
-  private final ProgramLifecycleService lifecycleService;
-  private final PropertiesResolver propertiesResolver;
-  private final NamespaceQueryAdmin namespaceQueryAdmin;
   private final CConfiguration cConf;
-  private ScheduleTaskRunner taskRunner;
   private ListeningExecutorService taskExecutorService;
 
   @Inject
   NotificationSubscriberService(MessagingService messagingService,
-                                Store store,
-                                ProgramLifecycleService lifecycleService, PropertiesResolver propertiesResolver,
-                                NamespaceQueryAdmin namespaceQueryAdmin,
                                 CConfiguration cConf,
                                 DatasetFramework datasetFramework,
                                 TransactionSystemClient txClient) {
-    this.store = store;
-    this.lifecycleService = lifecycleService;
-    this.propertiesResolver = propertiesResolver;
-    this.namespaceQueryAdmin = namespaceQueryAdmin;
     this.cConf = cConf;
     this.messagingContext = new MultiThreadMessagingContext(messagingService);
     this.transactional = Transactions.createTransactionalWithRetry(
       Transactions.createTransactional(new MultiThreadDatasetCache(
         new SystemDatasetInstantiator(datasetFramework), txClient,
-        NamespaceId.SYSTEM, ImmutableMap.<String, String>of(), null, null, this.messagingContext)),
+        NamespaceId.SYSTEM, ImmutableMap.<String, String>of(), null, null, messagingContext)),
       RetryStrategies.retryOnConflict(20, 100)
     );
     this.datasetFramework = datasetFramework;
@@ -124,8 +108,6 @@ public class NotificationSubscriberService extends AbstractExecutionThreadServic
   protected void startUp() throws Exception {
     taskExecutorService = MoreExecutors.listeningDecorator(
       Executors.newCachedThreadPool(Threads.createDaemonThreadFactory("notification-subscriber-task")));
-    taskRunner = new ScheduleTaskRunner(store, lifecycleService, propertiesResolver,
-                                        taskExecutorService, namespaceQueryAdmin, cConf);
   }
 
   @Override
@@ -168,7 +150,6 @@ public class NotificationSubscriberService extends AbstractExecutionThreadServic
   private abstract class NotificationSubscriberThread extends Thread {
     private final String topic;
     private final RetryStrategy scheduleStrategy;
-    private final Deque<Job> readyJobs;
     private int failureCount;
     private String messageId;
 
@@ -180,11 +161,6 @@ public class NotificationSubscriberService extends AbstractExecutionThreadServic
       // TODO: [CDAP-11370] Need to be configured in cdap-default.xml. Retry with delay ranging from 0.1s to 30s
       scheduleStrategy =
         co.cask.cdap.common.service.RetryStrategies.exponentialDelay(100, 30000, TimeUnit.MILLISECONDS);
-      this.readyJobs = new ArrayDeque<>();
-    }
-
-    void addJob(Job job) {
-      readyJobs.add(job);
     }
 
     @Override
@@ -222,10 +198,6 @@ public class NotificationSubscriberService extends AbstractExecutionThreadServic
         LOG.warn("Failed to get notification. Will retry in next run", e);
         failureCount++;
       }
-
-      // Still need to run jobs if the queue is not empty to avoid unlimited growth on the job queue
-      // This can happen if it fetches some notification from TMS
-      runReadyJobs();
 
       // If there is any failure during fetching of notifications or looking up of schedules,
       // delay the next fetch based on the strategy
@@ -265,24 +237,6 @@ public class NotificationSubscriberService extends AbstractExecutionThreadServic
       return emptyFetch;
     }
 
-    private void runReadyJobs() {
-      Iterator<Job> jobIterator = readyJobs.iterator();
-      while (jobIterator.hasNext()) {
-        Job job = jobIterator.next();
-        ProgramSchedule schedule = job.getSchedule();
-        try {
-          // TODO: Temporarily execute scheduled program without any checks. Need to check appSpec and scheduleSpec
-          taskRunner.execute(schedule.getProgramId(), ImmutableMap.<String, String>of(),
-                             ImmutableMap.<String, String>of());
-          LOG.debug("Run program {} in schedule", schedule.getProgramId(), schedule.getName());
-        } catch (Exception e) {
-          LOG.warn("Failed to run program {} in schedule {}. Skip running this program.",
-                   schedule.getProgramId(), schedule.getName(), e);
-        }
-        jobIterator.remove();
-      }
-    }
-
     abstract void updateJobQueue(DatasetContext context, Notification notification) throws Exception;
   }
 
@@ -313,21 +267,36 @@ public class NotificationSubscriberService extends AbstractExecutionThreadServic
       }
       DatasetId datasetId = DatasetId.fromString(datasetIdString);
       for (ProgramSchedule schedule : getSchedules(context, Schedulers.triggerKeyForPartition(datasetId))) {
-        addJob(new Job(schedule));
+        // long publishTimestamp = new MessageId(Bytes.fromHexString(message.getId())).getPublishTimestamp();
+        // should we use subscribe time (System.currentTimeMillis?)
+
+        JobQueueDataset jobQueue = getJobQueue(context);
+        List<Job> jobs = jobQueue.getJobsForSchedule(schedule.getScheduleId());
+        for (Job job : jobs) {
+          if (job.getJobState() == Job.JobState.PENDING_LAUNCH) {
+            // check if its PENDING_LAUNCH. If so, create a new Job to avoid the chance that the job-launching
+            // process has conflict
+            Job newJob = new SimpleJob(schedule, System.currentTimeMillis(),
+                                    Lists.newArrayList(notification), Job.JobState.PENDING_TRIGGER);
+            jobQueue.put(newJob);
+          } else {
+            job.getNotifications().add(notification);
+            jobQueue.put(job);
+          }
+        }
+        // if there is no existing job, add a new job with the first notification
+        if (jobs.isEmpty()) {
+          Job job = new SimpleJob(schedule, System.currentTimeMillis(),
+                                  Lists.newArrayList(notification), Job.JobState.PENDING_TRIGGER);
+          jobQueue.put(job);
+        }
       }
     }
   }
 
-  private static final class Job {
-    ProgramSchedule schedule;
-
-    Job(ProgramSchedule schedule) {
-      this.schedule = schedule;
-    }
-
-    public ProgramSchedule getSchedule() {
-      return schedule;
-    }
+  private JobQueueDataset getJobQueue(DatasetContext context) throws IOException, DatasetManagementException {
+    return DatasetsUtil.getOrCreateDataset(context, datasetFramework, Schedulers.JOB_QUEUE_DATASET_ID,
+                                           JobQueueDataset.class.getName(), DatasetProperties.EMPTY);
   }
 
   private Collection<ProgramSchedule> getSchedules(DatasetContext context, String triggerKey)

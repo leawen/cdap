@@ -27,15 +27,16 @@ import com.google.common.collect.ImmutableList;
 public class Schedulers {
   public static final String STORE_TYPE_NAME = ProgramScheduleStoreDataset.class.getName();
   public static final DatasetId STORE_DATASET_ID = NamespaceId.SYSTEM.dataset("schedule.store");
+  public static final DatasetId JOB_QUEUE_DATASET_ID = NamespaceId.SYSTEM.dataset("job.queue");
 
-  public static final String triggerKeyForPartition(DatasetId datasetId) {
+  public static String triggerKeyForPartition(DatasetId datasetId) {
     return "partition:" + datasetId.getNamespace() + '.' + datasetId.getDataset();
   }
 
   /**
    * This replicates what {@link ScheduleId#toIdParts()} does, but that method is protected.
    */
-  public static final Iterable<String> toIdParts(ScheduleId scheduleId) {
+  public static Iterable<String> toIdParts(ScheduleId scheduleId) {
     return ImmutableList.of(scheduleId.getNamespace(),
                             scheduleId.getApplication(),
                             scheduleId.getVersion(),
