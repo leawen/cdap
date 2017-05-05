@@ -20,15 +20,16 @@ import classnames from 'classnames';
 import shortid from 'shortid';
 import Rx from 'rx';
 import { Popover, PopoverTitle, PopoverContent } from 'reactstrap';
-import Mousetrap from 'mousetrap';
 import isNil from 'lodash/isNil';
 import {execute} from 'components/DataPrep/store/DataPrepActionCreator';
 import DataPrepActions from 'components/DataPrep/store/DataPrepActions';
 import T from 'i18n-react';
+import TextboxOnValium from 'components/TextboxOnValium';
 
 require('../../DataPrepTable/DataPrepTable.scss');
 require('./CutDirective.scss');
-const cellHighlightClassname = 'cl-highlight';
+const CELLHIGHLIGHTCLASSNAME = 'cl-highlight';
+const POPOVERTHETHERCLASSNAME = 'highlight-popover';
 const PREFIX = `features.DataPrep.Directives.CutDirective`;
 
 export default class CutDirective extends Component {
@@ -38,9 +39,9 @@ export default class CutDirective extends Component {
       columnDimension: {},
       textSelectionRange: {start: null, end: null, index: null},
       showPopover: false,
-      newColName: null
     };
 
+    this.newColName = null;
     this.mouseDownHandler = this.mouseDownHandler.bind(this);
     this.togglePopover = this.togglePopover.bind(this);
     this.mouseUpHandler = this.mouseUpHandler.bind(this);
@@ -60,7 +61,11 @@ export default class CutDirective extends Component {
   componentDidMount() {
     this.documentClick$ = Rx.DOM.fromEvent(document.body, 'click', false)
       .subscribe((e) => {
-        if (e.target.className.indexOf(cellHighlightClassname) === -1 && ['TR', 'TBODY'].indexOf(e.target.nodeName) === -1) {
+        if (
+          e.target.className.indexOf(CELLHIGHLIGHTCLASSNAME) === -1 &&
+          e.target.className.indexOf(`${POPOVERTHETHERCLASSNAME}-element`) === -1 &&
+          ['TR', 'TBODY'].indexOf(e.target.nodeName) === -1
+        ) {
           if (this.props.onClose) {
             this.props.onClose();
           }
@@ -75,26 +80,16 @@ export default class CutDirective extends Component {
     if (this.tetherRef) {
       this.tetherRef.position();
     }
-    let highlightpopover = document.querySelector('.highlight-popover-element');
-    if (highlightpopover) {
-      this.mouseStrap = new Mousetrap(highlightpopover);
-      this.mouseStrap.bind('enter', this.applyDirective);
-    } else if (this.mouseStrap) {
-      this.mouseStrap.reset();
-    }
   }
   componentWillUnmount() {
     if (this.documentClick$) {
       this.documentClick$.dispose();
     }
-    if (this.mouseStrap) {
-      this.mouseStrap.reset();
-    }
   }
   applyDirective() {
     let {start, end} = this.state.textSelectionRange;
     if (!isNil(start) && !isNil(end)) {
-      let directive = `cut-character ${this.props.columns[0]} ${this.state.newColName} -c ${start} ${end}`;
+      let directive = `cut-character ${this.props.columns[0]} ${this.newColName} -c ${start} ${end}`;
       execute([directive])
         .subscribe(() => {
           this.props.onClose();
@@ -110,18 +105,19 @@ export default class CutDirective extends Component {
         });
     }
   }
-  handleColNameChange(e) {
-    this.setState({
-      newColName: e.target.value
-    });
+  handleColNameChange(value, isChanged, keyCode) {
+    this.newColName = value;
+    if (keyCode === 13) {
+      this.applyDirective();
+    }
   }
   togglePopover() {
     if (this.state.showPopover) {
       this.setState({
         showPopover: false,
         textSelectionRange: {start: null, end: null, index: null},
-        newColName: null
       });
+      this.newColName = null;
     }
   }
   mouseDownHandler() {
@@ -144,8 +140,8 @@ export default class CutDirective extends Component {
           end: endRange,
           index
         },
-        newColName: this.props.columns[0] + '_copy'
       });
+      this.newColName = this.props.columns[0] + '_copy';
     } else {
       if (this.state.showPopover) {
         this.togglePopover();
@@ -159,7 +155,7 @@ export default class CutDirective extends Component {
   }
   renderPopover() {
     let tetherConfig = {
-      classPrefix: 'highlight-popover',
+      classPrefix: POPOVERTHETHERCLASSNAME,
       attachment: 'top right',
       targetAttachment: 'bottom left',
       constraints: [
@@ -180,31 +176,30 @@ export default class CutDirective extends Component {
         tether={tetherConfig}
         tetherRef={(ref) => this.tetherRef = ref}
       >
-        <PopoverTitle className={cellHighlightClassname}>{T.translate(`${PREFIX}.popoverTitle`)}</PopoverTitle>
+        <PopoverTitle className={CELLHIGHLIGHTCLASSNAME}>{T.translate(`${PREFIX}.popoverTitle`)}</PopoverTitle>
         <PopoverContent
-          className={cellHighlightClassname}
+          className={CELLHIGHLIGHTCLASSNAME}
           onClick={this.preventPropagation}
         >
-          <span className={cellHighlightClassname}>
+          <span className={CELLHIGHLIGHTCLASSNAME}>
             {T.translate(`${PREFIX}.extractDescription`, {range: `${start}-${end}`})}
           </span>
-          <div className="col-input-container">
-            <strong className={cellHighlightClassname}>{T.translate(`${PREFIX}.inputLabel`)}</strong>
-            <input
-              className={classnames("form-control mousetrap", cellHighlightClassname)}
-              value={this.state.newColName}
+          <div className={classnames("col-input-container", CELLHIGHLIGHTCLASSNAME)}>
+            <strong className={CELLHIGHLIGHTCLASSNAME}>{T.translate(`${PREFIX}.inputLabel`)}</strong>
+            <TextboxOnValium
+              className={classnames("form-control mousetrap", CELLHIGHLIGHTCLASSNAME)}
               onChange={this.handleColNameChange}
-              autoFocus
+              value={this.newColName}
             />
           </div>
           <div
-            className={`btn btn-primary ${cellHighlightClassname}`}
+            className={`btn btn-primary ${CELLHIGHLIGHTCLASSNAME}`}
             onClick={this.applyDirective}
           >
             {T.translate('features.DataPrep.Directives.apply')}
           </div>
           <div
-            className={`btn ${cellHighlightClassname}`}
+            className={`btn ${CELLHIGHLIGHTCLASSNAME}`}
             onClick={this.props.onClose}
           >
             {T.translate(`${PREFIX}.cancelBtnLabel`)}
@@ -233,12 +228,12 @@ export default class CutDirective extends Component {
       return (
         <td
           key={shortid.generate()}
-          className={cellHighlightClassname}
+          className={CELLHIGHLIGHTCLASSNAME}
           onMouseDown={this.mouseDownHandler}
           onMouseUp={this.mouseUpHandler.bind(this, head, index)}
         >
           <div
-            className={cellHighlightClassname}
+            className={CELLHIGHLIGHTCLASSNAME}
           >
             {
               index === this.state.textSelectionRange.index ?
