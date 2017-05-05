@@ -62,6 +62,7 @@ public abstract class AbstractAuthorizer implements Authorizer {
 
   @Override
   public Predicate<EntityId> createFilter(final Principal principal) throws Exception {
+    System.out.println("Authorizer's create Filter");
     return new Predicate<EntityId>() {
       @Override
       public boolean apply(EntityId entityId) {

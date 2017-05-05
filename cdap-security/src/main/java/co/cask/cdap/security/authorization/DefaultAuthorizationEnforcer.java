@@ -75,36 +75,58 @@ public class DefaultAuthorizationEnforcer implements AuthorizationEnforcer {
     doEnforce(entity, principal, actions, true);
   }
 
-  @Override
-  public Predicate<EntityId> createFilter(Principal principal) throws Exception {
-    if (!isSecurityAuthorizationEnabled()) {
-      return ALLOW_ALL;
-    }
 
-    return authorizer.createFilter(principal);
+  @Override
+  public Predicate<EntityId> createFilter(final Principal principal) throws Exception {
+    return new Predicate<EntityId>() {
+      @Override
+      public boolean apply(EntityId entityId) {
+        System.out.println("Filtering for " + entityId.getEntityName());
+        for (Action action : Action.values()) {
+          try {
+            enforce(entityId, principal, action);
+            return true;
+          } catch (Exception ignored) {
+            System.out.println("Don't have " + action.name() + " on " + entityId.getEntityName());
+          }
+        }
+        return false;
+      }
+    };
   }
+
+//  @Override
+//  public Predicate<EntityId> createFilter(Principal principal) throws Exception {
+//    if (!isSecurityAuthorizationEnabled()) {
+//      return ALLOW_ALL;
+//    }
+//
+//    return authorizer.createFilter(principal);
+//  }
 
 
   private boolean doEnforce(EntityId entity, Principal principal,
                             Set<Action> actions, boolean exceptionOnFailure) throws Exception {
     if (isPrivilegePropagationEnabled()) {
       if (entity instanceof ParentedId) {
+        System.out.println("Checking parent for " + entity.getEntityName());
         if (doEnforce(((ParentedId) entity).getParent(), principal, actions, false)) {
           return true;
         }
       }
     }
-
     LOG.trace("Enforcing actions {} on {} for principal {}.", actions, entity, principal);
     try {
       authorizer.enforce(entity, principal, actions);
     } catch (Exception e) {
       if (exceptionOnFailure) {
         throw new UnauthorizedException(principal, actions, entity);
+      } else {
+        return false;
       }
     }
 
-    return false;
+    return true;
   }
 
   private boolean isSecurityAuthorizationEnabled() {
