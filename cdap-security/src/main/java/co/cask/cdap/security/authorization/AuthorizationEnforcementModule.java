@@ -33,7 +33,7 @@ public class AuthorizationEnforcementModule extends RuntimeModule {
       @Override
       protected void configure() {
         // bind AuthorizationEnforcer to AuthorizationEnforcementService
-        bind(AuthorizationEnforcer.class).to(AuthorizationEnforcementService.class).in(Scopes.SINGLETON);
+        bind(AuthorizationEnforcer.class).to(DefaultAuthorizationEnforcer.class).in(Scopes.SINGLETON);
       }
     };
   }
@@ -62,7 +62,7 @@ public class AuthorizationEnforcementModule extends RuntimeModule {
       @Override
       protected void configure() {
         // bind AuthorizationEnforcer to AuthorizationEnforcementService
-        bind(AuthorizationEnforcer.class).to(AuthorizationEnforcementService.class).in(Scopes.SINGLETON);
+        bind(AuthorizationEnforcer.class).to(RemoteAuthorizationEnforcer.class).in(Scopes.SINGLETON);
       }
     };
   }
@@ -75,18 +75,7 @@ public class AuthorizationEnforcementModule extends RuntimeModule {
       @Override
       protected void configure() {
         // bind AuthorizationEnforcer to AuthorizationEnforcementService
-        bind(AuthorizationEnforcer.class).to(AuthorizationEnforcementService.class).in(Scopes.SINGLETON);
-
-        // Master runs a proxy caching service for privileges for system services and program containers to fetch
-        // privileges from authorization back ends.
-        // The Master service acts as a proxy for system services and program containers to authorization backends
-        // for fetching privileges, since they may not have access to make requests to authorization backends.
-        // e.g. Apache Sentry currently does not support proxy authentication or issue delegation tokens. As a result,
-        // all requests to Sentry need to be proxied via Master, which is whitelisted.
-        // Hence, bind PrivilegesFetcher to a proxy implementation, that makes a proxy call to master for fetching
-        // privileges
-        // bind PrivilegesFetcherProxyService as a singleton. This binding is used while starting/stopping
-        // the service itself.
+        bind(AuthorizationEnforcer.class).to(DefaultAuthorizationEnforcer.class).in(Scopes.SINGLETON);
       }
     };
   }
