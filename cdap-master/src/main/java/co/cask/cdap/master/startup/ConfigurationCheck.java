@@ -16,6 +16,7 @@
 
 package co.cask.cdap.master.startup;
 
+import co.cask.cdap.app.runtime.SparkCompat;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.logging.appender.kafka.LogPartitionType;
@@ -56,6 +57,7 @@ class ConfigurationCheck extends AbstractMasterCheck {
     LOG.info("Checking that config settings are valid.");
 
     Set<String> problemKeys = new HashSet<>();
+    checkSparkCompat();
     checkServiceResources(problemKeys);
     checkBindAddresses();
     checkPotentialPortConflicts(problemKeys);
@@ -68,6 +70,14 @@ class ConfigurationCheck extends AbstractMasterCheck {
       throw new RuntimeException("Invalid configuration settings for keys: " + Joiner.on(',').join(problemKeys));
     }
     LOG.info("  Configuration successfully verified.");
+  }
+
+  private void checkSparkCompat() {
+    try {
+      SparkCompat.get(cConf);
+    } catch (IllegalArgumentException e) {
+      LOG.error("  {}", e.getMessage());
+    }
   }
 
   // tx invalid list pruning is not allowed with replication

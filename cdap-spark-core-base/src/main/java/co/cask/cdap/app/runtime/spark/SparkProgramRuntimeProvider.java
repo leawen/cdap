@@ -47,7 +47,6 @@ import java.util.List;
  * A {@link ProgramRuntimeProvider} that provides runtime system support for {@link ProgramType#SPARK} program.
  * This class shouldn't have dependency on Spark classes.
  */
-@ProgramRuntimeProvider.SupportedProgramType(ProgramType.SPARK)
 public class SparkProgramRuntimeProvider implements ProgramRuntimeProvider {
 
   private static final Logger LOG = LoggerFactory.getLogger(SparkProgramRuntimeProvider.class);

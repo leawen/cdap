@@ -39,7 +39,12 @@ public interface ProgramRuntimeProvider {
     /**
      * Returns the list of supported {@link ProgramType}.
      */
-    ProgramType[] value();
+    ProgramType[] types();
+
+    /**
+     * Returns the Spark Compat version if Spark is a supported {@link ProgramType}.
+     */
+    SparkCompat sparkCompat();
   }
 
   /**

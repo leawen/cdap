@@ -17,6 +17,7 @@
 package co.cask.cdap.internal.app.runtime;
 
 import co.cask.cdap.app.runtime.ProgramRuntimeProvider;
+import co.cask.cdap.app.runtime.SparkCompat;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
 import co.cask.cdap.extension.AbstractExtensionLoader;
@@ -25,6 +26,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -35,11 +38,18 @@ import java.util.Set;
  */
 @Singleton
 public class ProgramRuntimeProviderLoader extends AbstractExtensionLoader<ProgramType, ProgramRuntimeProvider> {
+  private static final Logger LOG = LoggerFactory.getLogger(ProgramRuntimeProviderLoader.class);
+  private final SparkCompat sparkCompat;
 
   @VisibleForTesting
   @Inject
   public ProgramRuntimeProviderLoader(CConfiguration cConf) {
     super(cConf.get(Constants.AppFabric.RUNTIME_EXT_DIR, ""));
+    sparkCompat = SparkCompat.get(cConf);
+    LOG.info("sparkCompat = {}", sparkCompat.getCompat());
+    if (sparkCompat == SparkCompat.UNKNOWN) {
+      LOG.info("Unknown sparkCompat, Spark programs and plugins will not be available.");
+    }
   }
 
   @Override
@@ -47,6 +57,14 @@ public class ProgramRuntimeProviderLoader extends AbstractExtensionLoader<Progra
     // See if the provide supports the required program type
     ProgramRuntimeProvider.SupportedProgramType supportedTypes =
       programRuntimeProvider.getClass().getAnnotation(ProgramRuntimeProvider.SupportedProgramType.class);
-    return supportedTypes == null ? ImmutableSet.<ProgramType>of() : ImmutableSet.copyOf(supportedTypes.value());
+    SparkCompat providerCompat = supportedTypes.sparkCompat();
+
+    ImmutableSet.Builder<ProgramType> builder = ImmutableSet.builder();
+    for (ProgramType type : supportedTypes.types()) {
+      if (type != ProgramType.SPARK || providerCompat == sparkCompat) {
+        builder.add(type);
+      }
+    }
+    return builder.build();
   }
 }
