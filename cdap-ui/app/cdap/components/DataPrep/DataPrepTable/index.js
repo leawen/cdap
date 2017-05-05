@@ -88,6 +88,7 @@ export default class DataPrepTable extends Component {
   }
 
   columnDropdownOpened(columnDropdown, openState) {
+    console.log('floo');
     if (openState) {
       this.setState({
         columnDropdownOpen: columnDropdown
@@ -252,97 +253,102 @@ export default class DataPrepTable extends Component {
           })
         } id="dataprep-table-id">
         <ColumnHighlighter />
-        <table className="table table-bordered">
-          <thead className="thead-inverse">
-            {
-              headers.map((head, index) => {
-                return (
-                  <th
-                    id={`column-${head.name}`}
-                    className={classnames({
-                      'selected': this.columnIsSelected(head.name),
-                      'dropdownOpened': this.state.columnDropdownOpen === head.name
-                    })}
-                    key={head.name}
-                  >
-                    <div
-                      className="clearfix column-wrapper"
-                    >
-                      {
-                        !head.edit ?
-                          <span
-                            className="header-text"
-                            onClick={this.switchToEditColumnName.bind(this, head)}
-                          >
-                            <span>
-                              {head.name}
-                            </span>
-                          </span>
-                        :
-                          <div className="warning-container-wrapper float-xs-left">
-                            <TextboxOnValium
-                              onChange={this.handleSaveEditedColumnName.bind(this, index)}
-                              value={head.name}
-                              onWarning={this.showWarningMessage.bind(this, index)}
-                            />
-                            {
-                              head.showWarning ?
-                                <WarningContainer
-                                  message={T.translate('features.DataPrep.DataPrepTable.columnEditWarningMessage')}
-                                >
-                                  <div className="warning-btns-container">
-                                    <div
-                                      className="btn btn-primary"
-                                      onClick={this.handleSaveEditedColumnName.bind(this, index, head.editedColumnName, false)}
-                                    >
-                                      {T.translate('features.DataPrep.Directives.apply')}
-                                    </div>
-                                    <div
-                                      className="btn"
-                                      onClick={this.handleSaveEditedColumnName.bind(this, index, head.name, true)}
-                                    >
-                                      {T.translate('features.DataPrep.Directives.cancel')}
-                                    </div>
-                                  </div>
-                                </WarningContainer>
-                              :
-                                null
-                            }
-                          </div>
-                      }
-                      <span className="float-xs-right directives-dropdown-button">
-                        <ColumnActionsDropdown
-                          column={head.name}
-                          dropdownOpened={this.columnDropdownOpened}
-                        />
-                      </span>
-                      <span
-                        onClick={this.toggleColumnSelect.bind(this, head.name)}
-                        className={classnames('float-xs-right fa column-header-checkbox', {
-                          'fa-square-o': !this.columnIsSelected(head.name),
-                          'fa-check-square': this.columnIsSelected(head.name)
+        {
+          isNil(highlightColumns.directive) ?
+            <table className="table table-bordered">
+              <thead className="thead-inverse">
+                {
+                  headers.map((head, index) => {
+                    return (
+                      <th
+                        id={`column-${head.name}`}
+                        className={classnames({
+                          'selected': this.columnIsSelected(head.name),
+                          'dropdownOpened': this.state.columnDropdownOpen === head.name
                         })}
-                      />
-                    </div>
-                  </th>
-                );
-              })
-            }
-          </thead>
-          <tbody>
-            {
-              data.map((row) => {
-                return (
-                  <tr key={shortid.generate()}>
-                    {headers.map((head) => {
-                      return <td key={shortid.generate()}><div>{row[head.name]}</div></td>;
-                    })}
-                  </tr>
-                );
-              })
-            }
-          </tbody>
-        </table>
+                        key={head.name}
+                      >
+                        <div
+                          className="clearfix column-wrapper"
+                        >
+                          {
+                            !head.edit ?
+                              <span
+                                className="header-text"
+                                onClick={this.switchToEditColumnName.bind(this, head)}
+                              >
+                                <span>
+                                  {head.name}
+                                </span>
+                              </span>
+                            :
+                              <div className="warning-container-wrapper float-xs-left">
+                                <TextboxOnValium
+                                  onChange={this.handleSaveEditedColumnName.bind(this, index)}
+                                  value={head.name}
+                                  onWarning={this.showWarningMessage.bind(this, index)}
+                                />
+                                {
+                                  head.showWarning ?
+                                    <WarningContainer
+                                      message={T.translate('features.DataPrep.DataPrepTable.columnEditWarningMessage')}
+                                    >
+                                      <div className="warning-btns-container">
+                                        <div
+                                          className="btn btn-primary"
+                                          onClick={this.handleSaveEditedColumnName.bind(this, index, head.editedColumnName, false)}
+                                        >
+                                          {T.translate('features.DataPrep.Directives.apply')}
+                                        </div>
+                                        <div
+                                          className="btn"
+                                          onClick={this.handleSaveEditedColumnName.bind(this, index, head.name, true)}
+                                        >
+                                          {T.translate('features.DataPrep.Directives.cancel')}
+                                        </div>
+                                      </div>
+                                    </WarningContainer>
+                                  :
+                                    null
+                                }
+                              </div>
+                          }
+                          <span className="float-xs-right directives-dropdown-button">
+                            <ColumnActionsDropdown
+                              column={head.name}
+                              dropdownOpened={this.columnDropdownOpened}
+                            />
+                          </span>
+                          <span
+                            onClick={this.toggleColumnSelect.bind(this, head.name)}
+                            className={classnames('float-xs-right fa column-header-checkbox', {
+                              'fa-square-o': !this.columnIsSelected(head.name),
+                              'fa-check-square': this.columnIsSelected(head.name)
+                            })}
+                          />
+                        </div>
+                      </th>
+                    );
+                  })
+                }
+              </thead>
+              <tbody>
+                {
+                  data.map((row) => {
+                    return (
+                      <tr key={shortid.generate()}>
+                        {headers.map((head) => {
+                          return <td key={shortid.generate()}><div>{row[head.name]}</div></td>;
+                        })}
+                      </tr>
+                    );
+                  })
+                }
+              </tbody>
+            </table>
+          :
+            null
+        }
       </div>
     );
   }

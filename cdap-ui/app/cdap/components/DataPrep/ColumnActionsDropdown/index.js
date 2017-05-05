@@ -50,7 +50,7 @@ export default class ColumnActionsDropdown extends Component {
       open: null,
       selectedHeaders: DataPrepStore.getState().dataprep.selectedHeaders
     };
-
+    this.unmounted = false;
     this.toggleDropdown = this.toggleDropdown.bind(this);
 
 
@@ -156,9 +156,13 @@ export default class ColumnActionsDropdown extends Component {
     }
     this.sub();
     Mousetrap.unbind('esc');
+    this.unmounted = true;
   }
 
   toggleDropdown(toggleState) {
+    if (this.unmounted) {
+      return;
+    }
     let newState = typeof toggleState === 'boolean' ? toggleState : !this.state.dropdownOpen;
 
     this.setState({

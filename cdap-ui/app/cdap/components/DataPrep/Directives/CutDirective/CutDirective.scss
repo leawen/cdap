@@ -13,6 +13,9 @@
  * License for the specific language governing permissions and limitations under
  * the License.
 */
+$grayed-out-color: #d1d1d1;
+$highlight-color: lighten(#80d8ff, 10%);
+$text-selection-color: #40c4ff;
 
 .cut-directive {
   z-index: 2001;
@@ -22,14 +25,42 @@
     table {
       colgroup {
         col.highlight-column {
-          background-color: lightblue;
+          background-color: $highlight-color;
         }
       }
       td,
       th {
         &.gray-out {
-          color: #9e9d9d;
+          color: $grayed-out-color;
+          user-select: none;
         }
+      }
+      td.cl-highlight,
+      td.cl-highlight div.cl-highlight {
+        &::selection,
+        [id*="highlight-cell-"] {
+          background: $text-selection-color;
+        }
+      }
+    }
+  }
+}
+
+.popover {
+  &.highlight-popover-element {
+    z-index: 2500;
+  }
+  &[class*="highlight-popover-out-of-bounds-"] {
+    display: none;
+  }
+  .cut-directive-popover {
+    font-size: 13px;
+    .popover-content {
+      .col-input-container {
+        margin: 10px 0;
+      }
+      input {
+        margin: 5px 0;
       }
     }
   }
