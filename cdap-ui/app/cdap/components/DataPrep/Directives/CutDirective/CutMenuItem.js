@@ -17,6 +17,7 @@
 import React, {Component, PropTypes} from 'react';
 import DataPrepStore from 'components/DataPrep/store';
 import DataPrepActions from 'components/DataPrep/store/DataPrepActions';
+import T from 'i18n-react';
 
 export default class CutMenuItem extends Component {
   constructor(props) {
@@ -43,7 +44,7 @@ export default class CutMenuItem extends Component {
         onClick={this.highlightColumn}
       >
         <span>
-          Cut
+          {T.translate('features.DataPrep.Directives.CutMenuItem.menuLabel')}
         </span>
       </div>
     );

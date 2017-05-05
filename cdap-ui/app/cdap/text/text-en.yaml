@@ -344,6 +344,13 @@ features:
         inputLabel: Name New Column
         placeholder: Destination Column
         title: Copy Column
+      CutDirective:
+        popoverTitle: Extract Using Position
+        extractDescription: Extract characters *_{range}_* from this column to a new column
+        inputLabel: Name of destination column
+        cancelBtnLabel: Exit 'Extract' mode
+      CutMenuItem:
+        menuLabel: Cut
       Drop:
         title:
           plural: Delete Selected Columns

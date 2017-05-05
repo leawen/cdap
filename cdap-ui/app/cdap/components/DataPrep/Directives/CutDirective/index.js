@@ -24,10 +24,12 @@ import Mousetrap from 'mousetrap';
 import isNil from 'lodash/isNil';
 import {execute} from 'components/DataPrep/store/DataPrepActionCreator';
 import DataPrepActions from 'components/DataPrep/store/DataPrepActions';
+import T from 'i18n-react';
 
 require('../../DataPrepTable/DataPrepTable.scss');
 require('./CutDirective.scss');
 const cellHighlightClassname = 'cl-highlight';
+const PREFIX = `features.DataPrep.Directives.CutDirective`;
 
 export default class CutDirective extends Component {
   constructor(props) {
@@ -124,9 +126,7 @@ export default class CutDirective extends Component {
   }
   mouseDownHandler() {
     this.textSelection = true;
-    if (this.state.showPopover) {
-      this.togglePopover();
-    }
+    this.togglePopover();
   }
   mouseUpHandler(head, index) {
 
@@ -156,6 +156,62 @@ export default class CutDirective extends Component {
     e.stopPropagation();
     e.nativeEvent.stopImmediatePropagation();
     e.preventDefault();
+  }
+  renderPopover() {
+    let tetherConfig = {
+      classPrefix: 'highlight-popover',
+      attachment: 'top right',
+      targetAttachment: 'bottom left',
+      constraints: [
+        {
+          to: 'scrollParent',
+          attachment: 'together'
+        }
+      ]
+    };
+    let {start, end} = this.state.textSelectionRange;
+    return (
+      <Popover
+        placement="bottom left"
+        className="cut-directive-popover"
+        isOpen={this.state.showPopover}
+        target={`highlight-cell-${this.state.textSelectionRange.index}`}
+        toggle={this.togglePopover}
+        tether={tetherConfig}
+        tetherRef={(ref) => this.tetherRef = ref}
+      >
+        <PopoverTitle className={cellHighlightClassname}>{T.translate(`${PREFIX}.popoverTitle`)}</PopoverTitle>
+        <PopoverContent
+          className={cellHighlightClassname}
+          onClick={this.preventPropagation}
+        >
+          <span className={cellHighlightClassname}>
+            {T.translate(`${PREFIX}.extractDescription`, {range: `${start}-${end}`})}
+          </span>
+          <div className="col-input-container">
+            <strong className={cellHighlightClassname}>{T.translate(`${PREFIX}.inputLabel`)}</strong>
+            <input
+              className={classnames("form-control mousetrap", cellHighlightClassname)}
+              value={this.state.newColName}
+              onChange={this.handleColNameChange}
+              autoFocus
+            />
+          </div>
+          <div
+            className={`btn btn-primary ${cellHighlightClassname}`}
+            onClick={this.applyDirective}
+          >
+            {T.translate('features.DataPrep.Directives.apply')}
+          </div>
+          <div
+            className={`btn ${cellHighlightClassname}`}
+            onClick={this.props.onClose}
+          >
+            {T.translate(`${PREFIX}.cancelBtnLabel`)}
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
   }
   render() {
     let {data, headers} = DataPrepStore.getState().dataprep;
@@ -212,7 +268,6 @@ export default class CutDirective extends Component {
         </td>
       );
     };
-
     const renderTableHeader = (head) => {
       if (head !== column) {
         return (
@@ -274,50 +329,7 @@ export default class CutDirective extends Component {
               }
           </tbody>
         </table>
-        <Popover
-          placement="bottom left"
-          className="cut-directive-popover"
-          isOpen={this.state.showPopover}
-          target={`highlight-cell-${this.state.textSelectionRange.index}`}
-          toggle={this.togglePopover}
-          tether={{
-            classPrefix: 'highlight-popover',
-            attachment: 'top right',
-            targetAttachment: 'bottom left',
-            constraints: [
-              {
-                to: 'scrollParent',
-                attachment: 'together'
-              }
-            ]
-          }}
-          tetherRef={(ref) => this.tetherRef = ref}
-        >
-          <PopoverTitle className={cellHighlightClassname}>Extract Using Position</PopoverTitle>
-          <PopoverContent
-            className={cellHighlightClassname}
-            onClick={this.preventPropagation}
-          >
-            <span className={cellHighlightClassname}>
-              Extract characters {this.state.textSelectionRange.start}-{this.state.textSelectionRange.end} from this column to a new column
-            </span>
-            <div className="col-input-container">
-              <strong className={cellHighlightClassname}>Name of destination column</strong>
-              <input
-                className={classnames("form-control mousetrap", cellHighlightClassname)}
-                value={this.state.newColName}
-                onChange={this.handleColNameChange}
-                autoFocus
-              />
-            </div>
-            <div className="btn btn-primary">
-              Apply
-            </div>
-            <div className="btn">
-              Exit 'Extract' mode
-            </div>
-          </PopoverContent>
-        </Popover>
+        {this.renderPopover()}
       </div>
     );
   }
