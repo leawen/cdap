@@ -41,7 +41,7 @@ import java.util.Set;
 public class DefaultAuthorizationEnforcer implements AuthorizationEnforcer {
 
   private static final Logger LOG = LoggerFactory.getLogger(DefaultAuthorizationEnforcer.class);
-  final Authorizer authorizer;
+  final AuthorizerInstantiator authorizerInstantiator;
 
   private static final Predicate<EntityId> ALLOW_ALL = new Predicate<EntityId>() {
     @Override
@@ -58,7 +58,7 @@ public class DefaultAuthorizationEnforcer implements AuthorizationEnforcer {
     this.securityEnabled = cConf.getBoolean(Constants.Security.ENABLED);
     this.authorizationEnabled = cConf.getBoolean(Constants.Security.Authorization.ENABLED);
     this.propagatePrivileges = cConf.getBoolean(Constants.Security.Authorization.PROPAGATE_PRIVILEGES);
-    this.authorizer = authorizerInstantiator.get();
+    this.authorizerInstantiator = authorizerInstantiator;
   }
 
   @Override
@@ -117,7 +117,7 @@ public class DefaultAuthorizationEnforcer implements AuthorizationEnforcer {
     }
     LOG.trace("Enforcing actions {} on {} for principal {}.", actions, entity, principal);
     try {
-      authorizer.enforce(entity, principal, actions);
+      authorizerInstantiator.get().enforce(entity, principal, actions);
     } catch (Exception e) {
       if (exceptionOnFailure) {
         throw new UnauthorizedException(principal, actions, entity);
