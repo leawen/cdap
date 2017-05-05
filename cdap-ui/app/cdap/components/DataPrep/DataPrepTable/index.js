@@ -88,7 +88,6 @@ export default class DataPrepTable extends Component {
   }
 
   columnDropdownOpened(columnDropdown, openState) {
-    console.log('floo');
     if (openState) {
       this.setState({
         columnDropdownOpen: columnDropdown

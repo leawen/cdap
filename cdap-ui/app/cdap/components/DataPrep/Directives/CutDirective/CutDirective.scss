@@ -18,7 +18,7 @@ $highlight-color: lighten(#80d8ff, 10%);
 $text-selection-color: #40c4ff;
 
 .cut-directive {
-  z-index: 2001;
+  z-index: 999;
 
   &.dataprep-table {
     height: 100%;
@@ -48,7 +48,7 @@ $text-selection-color: #40c4ff;
 
 .popover {
   &.highlight-popover-element {
-    z-index: 2500;
+    z-index: 999;
   }
   &[class*="highlight-popover-out-of-bounds-"] {
     display: none;
