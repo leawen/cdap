@@ -33,6 +33,7 @@ public class AppWithMultipleWorkflows extends AbstractApplication {
     setDescription("Sample application with multiple Workflows");
     addWorkflow(new SomeWorkflow());
     addWorkflow(new AnotherWorkflow());
+    addWorkflow(new ExtraWorkflow());
   }
 
   /**
@@ -82,6 +83,31 @@ public class AppWithMultipleWorkflows extends AbstractApplication {
     @Override
     public void run() {
       LOG.info("Ran another dummy action");
+    }
+  }
+
+  /**
+   * Extra Workflow
+   */
+  public static class ExtraWorkflow extends AbstractWorkflow {
+    public static final String NAME = "ExtraWorkflow";
+    @Override
+    public void configure() {
+      setName(NAME);
+      setDescription("ExtraWorkflow description");
+      addAction(new ExtraDummyAction());
+    }
+  }
+
+  /**
+   * Extra Dummy Action
+   */
+  public static class ExtraDummyAction extends AbstractCustomAction {
+    private static final Logger LOG = LoggerFactory.getLogger(ExtraDummyAction.class);
+
+    @Override
+    public void run() {
+      LOG.info("Ran Extra dummy action");
     }
   }
 }
