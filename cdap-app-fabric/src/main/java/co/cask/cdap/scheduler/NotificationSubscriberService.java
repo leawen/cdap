@@ -25,6 +25,7 @@ import co.cask.cdap.api.messaging.Message;
 import co.cask.cdap.api.messaging.MessageFetcher;
 import co.cask.cdap.api.messaging.TopicNotFoundException;
 import co.cask.cdap.app.store.Store;
+import co.cask.cdap.common.NotFoundException;
 import co.cask.cdap.common.ServiceUnavailableException;
 import co.cask.cdap.common.conf.CConfiguration;
 import co.cask.cdap.common.conf.Constants;
@@ -49,6 +50,8 @@ import co.cask.cdap.messaging.MessagingService;
 import co.cask.cdap.proto.Notification;
 import co.cask.cdap.proto.id.DatasetId;
 import co.cask.cdap.proto.id.NamespaceId;
+import co.cask.cdap.proto.id.ProgramId;
+import co.cask.cdap.proto.id.ScheduleId;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.AbstractExecutionThreadService;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -56,6 +59,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.google.gson.reflect.TypeToken;
 import com.google.inject.Inject;
 import org.apache.tephra.RetryStrategies;
 import org.apache.tephra.TransactionSystemClient;
@@ -64,6 +68,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -71,6 +76,7 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
@@ -83,6 +89,7 @@ public class NotificationSubscriberService extends AbstractExecutionThreadServic
   // Sampling log only log once per 10000
   private static final Logger SAMPLING_LOG = Loggers.sampling(LOG, LogSamplers.limitRate(10000));
   private static final Gson GSON = new Gson();
+  private static final Type MAP_STRING_STRING_TYPE = new TypeToken<Map<String, String>>() { }.getType();
 
   private final List<NotificationSubscriberThread> subscriberThreads;
   private final Transactional transactional;
@@ -271,9 +278,8 @@ public class NotificationSubscriberService extends AbstractExecutionThreadServic
         Job job = jobIterator.next();
         ProgramSchedule schedule = job.getSchedule();
         try {
-          // TODO: Temporarily execute scheduled program without any checks. Need to check appSpec and scheduleSpec
-          taskRunner.execute(schedule.getProgramId(), ImmutableMap.<String, String>of(),
-                             ImmutableMap.<String, String>of());
+          // Necessary check is done on the publisher side before sending the notification
+          taskRunner.execute(schedule.getProgramId(), job.getSystemArgs(), job.getUserArgs());
           LOG.debug("Run program {} in schedule", schedule.getProgramId(), schedule.getName());
         } catch (Exception e) {
           LOG.warn("Failed to run program {} in schedule {}. Skip running this program.",
@@ -293,8 +299,17 @@ public class NotificationSubscriberService extends AbstractExecutionThreadServic
     }
 
     @Override
-    protected void updateJobQueue(DatasetContext context, Notification notification) {
+    protected void updateJobQueue(DatasetContext context, Notification notification)
+      throws IOException, DatasetManagementException, NotFoundException {
 
+      Map<String, String> properties = notification.getProperties();
+      ProgramId programId = ProgramId.fromString(properties.get("programId"));
+      String scheduleName = properties.get("scheduleName");
+      ScheduleId scheduleId = programId.getParent().schedule(scheduleName);
+      ProgramSchedule schedule = getScheduleDataset(context).getSchedule(scheduleId);
+      Map<String, String> systemArgs = GSON.fromJson(properties.get("systemArgs"), MAP_STRING_STRING_TYPE);
+      Map<String, String> userArgs = GSON.fromJson(properties.get("userArgs"), MAP_STRING_STRING_TYPE);
+      addJob(new Job(schedule, systemArgs, userArgs));
     }
   }
 
@@ -319,14 +334,30 @@ public class NotificationSubscriberService extends AbstractExecutionThreadServic
   }
 
   private static final class Job {
-    ProgramSchedule schedule;
+    private final ProgramSchedule schedule;
+    private final Map<String, String> systemArgs;
+    private final Map<String, String> userArgs;
 
     Job(ProgramSchedule schedule) {
+      this(schedule, ImmutableMap.<String, String>of(), ImmutableMap.<String, String>of());
+    }
+
+    Job(ProgramSchedule schedule, Map<String, String> systemArgs, Map<String, String> userArgs) {
       this.schedule = schedule;
+      this.systemArgs = systemArgs;
+      this.userArgs = userArgs;
     }
 
     public ProgramSchedule getSchedule() {
       return schedule;
+    }
+
+    public Map<String, String> getSystemArgs() {
+      return systemArgs;
+    }
+
+    public Map<String, String> getUserArgs() {
+      return userArgs;
     }
   }
 

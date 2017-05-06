@@ -137,7 +137,7 @@ public class CoreSchedulerService extends AbstractIdleService implements Schedul
         store.deleteSchedules(appId);
         return null;
       }
-    }, null);
+    }, RuntimeException.class);
   }
 
   @Override
@@ -157,7 +157,7 @@ public class CoreSchedulerService extends AbstractIdleService implements Schedul
       public List<ProgramSchedule> run(ProgramScheduleStoreDataset store) {
         return store.listSchedules(appId);
       }
-    }, null);
+    }, RuntimeException.class);
   }
 
   @Override
@@ -167,7 +167,7 @@ public class CoreSchedulerService extends AbstractIdleService implements Schedul
       public List<ProgramSchedule> run(ProgramScheduleStoreDataset store) {
         return store.listSchedules(programId);
       }
-    }, null);
+    }, RuntimeException.class);
   }
 
   private interface StoreTxRunnable<V, T extends Throwable> {

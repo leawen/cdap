@@ -19,6 +19,9 @@ package co.cask.cdap.scheduler;
 import co.cask.cdap.AppWithMultipleWorkflows;
 import co.cask.cdap.api.Config;
 import co.cask.cdap.api.messaging.TopicNotFoundException;
+import co.cask.cdap.api.schedule.SchedulableProgramType;
+import co.cask.cdap.api.schedule.ScheduleSpecification;
+import co.cask.cdap.api.workflow.ScheduleProgramInfo;
 import co.cask.cdap.app.store.Store;
 import co.cask.cdap.common.AlreadyExistsException;
 import co.cask.cdap.common.NotFoundException;
@@ -29,6 +32,7 @@ import co.cask.cdap.internal.app.runtime.schedule.ProgramSchedule;
 import co.cask.cdap.internal.app.runtime.schedule.trigger.PartitionTrigger;
 import co.cask.cdap.internal.app.runtime.schedule.trigger.TimeTrigger;
 import co.cask.cdap.internal.app.services.http.AppFabricTestBase;
+import co.cask.cdap.internal.schedule.TimeSchedule;
 import co.cask.cdap.internal.schedule.constraint.Constraint;
 import co.cask.cdap.messaging.MessagingService;
 import co.cask.cdap.messaging.client.StoreRequestBuilder;
@@ -188,7 +192,7 @@ public class CoreSchedulerServiceTest extends AppFabricTestBase {
   }
 
   @Test
-  public void testRunWorkflow() throws Exception {
+  public void testPartitionSchedule() throws Exception {
     messagingService = getInjector().getInstance(MessagingService.class);
     final Scheduler scheduler = getInjector().getInstance(Scheduler.class);
     CConfiguration cConf = getInjector().getInstance(CConfiguration.class);
@@ -202,6 +206,54 @@ public class CoreSchedulerServiceTest extends AppFabricTestBase {
         testNewPartition(scheduler);
       }
     } finally {
+      if (scheduler instanceof Service) {
+        ((Service) scheduler).stopAndWait();
+      }
+    }
+  }
+
+  @Test
+  public void testTimeSchedule() throws Exception {
+    // Deploy an app with version
+    Id.Artifact artifactId = Id.Artifact.from(Id.Namespace.DEFAULT, "appwithmultipleworkflows", VERSION1);
+    addAppArtifact(artifactId, AppWithMultipleWorkflows.class);
+
+    CConfiguration cConf = getInjector().getInstance(CConfiguration.class);
+    TopicId topicId = NamespaceId.SYSTEM.topic(cConf.get(Constants.Dataset.DATA_EVENT_TOPIC));
+    store = getInjector().getInstance(Store.class);
+    final String name = topicId.getTopic() + AppWithMultipleWorkflows.SomeWorkflow.NAME;
+    TimeSchedule timeSchedule = new TimeSchedule(name, "", "*/1 * * * *");
+    final ProgramId programId = APP_ID.workflow(AppWithMultipleWorkflows.SomeWorkflow.NAME);
+
+    final Scheduler scheduler = getInjector().getInstance(Scheduler.class);
+    if (scheduler instanceof Service) {
+      ((Service) scheduler).startAndWait();
+    }
+    try {
+      // Add schedule to CoreSchedulerService
+      scheduler.addSchedule(new ProgramSchedule(name, "",
+                                                programId,
+                                                ImmutableMap.<String, String>of(),
+                                                new TimeTrigger(timeSchedule.getCronEntry()),
+                                                ImmutableList.<Constraint>of()));
+      // Create ScheduleSpecification and add to quartz
+      ScheduleSpecification scheduleSpecification =
+        new ScheduleSpecification(timeSchedule,
+                                  new ScheduleProgramInfo(SchedulableProgramType.WORKFLOW,
+                                                          AppWithMultipleWorkflows.SomeWorkflow.NAME),
+                                  ImmutableMap.<String, String>of());
+      addSchedule(APP_ID.getNamespace(), APP_ID.getApplication(), APP_ID.getVersion(),
+                  "1mSchedule", scheduleSpecification);
+
+      Tasks.waitFor(1, new Callable<Integer>() {
+        @Override
+        public Integer call() throws Exception {
+          return store.getRuns(programId, ProgramRunStatus.COMPLETED, 0, Long.MAX_VALUE, Integer.MAX_VALUE).size();
+        }
+      }, 75, TimeUnit.SECONDS);
+    } finally {
+      store.removeApplication(APP_ID);
+      scheduler.deleteSchedules(APP_ID);
       if (scheduler instanceof Service) {
         ((Service) scheduler).stopAndWait();
       }

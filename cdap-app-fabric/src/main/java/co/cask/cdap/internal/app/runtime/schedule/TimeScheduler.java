@@ -27,6 +27,7 @@ import co.cask.cdap.common.namespace.NamespaceQueryAdmin;
 import co.cask.cdap.internal.app.services.ProgramLifecycleService;
 import co.cask.cdap.internal.app.services.PropertiesResolver;
 import co.cask.cdap.internal.schedule.TimeSchedule;
+import co.cask.cdap.messaging.MessagingService;
 import co.cask.cdap.proto.ProgramType;
 import co.cask.cdap.proto.ScheduledRuntime;
 import co.cask.cdap.proto.id.ApplicationId;
@@ -74,6 +75,7 @@ final class TimeScheduler implements Scheduler {
 
   private org.quartz.Scheduler scheduler;
   private final Supplier<org.quartz.Scheduler> schedulerSupplier;
+  private final MessagingService messagingService;
   private final ProgramLifecycleService lifecycleService;
   private final PropertiesResolver propertiesResolver;
   private ListeningExecutorService taskExecutorService;
@@ -83,11 +85,12 @@ final class TimeScheduler implements Scheduler {
   private final CConfiguration cConf;
 
   @Inject
-  TimeScheduler(Supplier<org.quartz.Scheduler> schedulerSupplier, Store store,
+  TimeScheduler(Supplier<org.quartz.Scheduler> schedulerSupplier, Store store, MessagingService messagingService,
                 ProgramLifecycleService lifecycleService, PropertiesResolver propertiesResolver,
                 NamespaceQueryAdmin namespaceQueryAdmin, CConfiguration cConf) {
     this.schedulerSupplier = schedulerSupplier;
     this.store = store;
+    this.messagingService = messagingService;
     this.lifecycleService = lifecycleService;
     this.scheduler = null;
     this.propertiesResolver = propertiesResolver;
@@ -459,8 +462,7 @@ final class TimeScheduler implements Scheduler {
         Class<? extends Job> jobClass = bundle.getJobDetail().getJobClass();
 
         if (DefaultSchedulerService.ScheduledJob.class.isAssignableFrom(jobClass)) {
-          return new DefaultSchedulerService.ScheduledJob(store, lifecycleService, propertiesResolver,
-                                                          taskExecutorService, namespaceQueryAdmin, cConf);
+          return new DefaultSchedulerService.ScheduledJob(store, messagingService, propertiesResolver, cConf);
         } else {
           try {
             return jobClass.newInstance();

@@ -93,7 +93,7 @@ public final class ScheduleTaskRunner {
 
     String scheduleName = systemOverrides.get(ProgramOptionConstants.SCHEDULE_NAME);
     ApplicationSpecification appSpec = store.getApplication(programId.getParent());
-    if (appSpec == null || appSpec.getSchedules().get(scheduleName) == null) {
+    if (appSpec == null) {
       throw new TaskExecutionException(String.format(UserMessages.getMessage(UserErrors.PROGRAM_NOT_FOUND), programId),
                                        false);
     }

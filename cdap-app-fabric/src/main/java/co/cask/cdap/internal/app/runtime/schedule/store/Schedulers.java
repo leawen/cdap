@@ -16,10 +16,16 @@
 
 package co.cask.cdap.internal.app.runtime.schedule.store;
 
+import co.cask.cdap.internal.app.runtime.schedule.ProgramSchedule;
+import co.cask.cdap.internal.app.runtime.schedule.trigger.TimeTrigger;
+import co.cask.cdap.internal.schedule.TimeSchedule;
+import co.cask.cdap.internal.schedule.constraint.Constraint;
 import co.cask.cdap.proto.id.DatasetId;
 import co.cask.cdap.proto.id.NamespaceId;
+import co.cask.cdap.proto.id.ProgramId;
 import co.cask.cdap.proto.id.ScheduleId;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * Common utility methods for scheduling.
@@ -40,5 +46,11 @@ public class Schedulers {
                             scheduleId.getApplication(),
                             scheduleId.getVersion(),
                             scheduleId.getSchedule());
+  }
+
+  public static ProgramSchedule getProgramSchedule(TimeSchedule timeSchedule, ProgramId programId) {
+    TimeTrigger trigger = new TimeTrigger(timeSchedule.getCronEntry());
+    return new ProgramSchedule(timeSchedule.getName(), timeSchedule.getDescription(), programId,
+                               ImmutableMap.<String, String>of(), trigger, ImmutableList.<Constraint>of());
   }
 }

@@ -22,9 +22,11 @@ import co.cask.cdap.common.namespace.NamespaceQueryAdmin;
 import co.cask.cdap.internal.app.runtime.ProgramOptionConstants;
 import co.cask.cdap.internal.app.services.ProgramLifecycleService;
 import co.cask.cdap.internal.app.services.PropertiesResolver;
+import co.cask.cdap.messaging.MessagingService;
 import co.cask.cdap.proto.ProgramType;
 import co.cask.cdap.proto.id.ApplicationId;
 import co.cask.cdap.proto.id.ProgramId;
+import co.cask.cdap.proto.id.TopicId;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -51,12 +53,11 @@ public class DefaultSchedulerService {
   public static final class ScheduledJob implements Job {
 
     private static final Logger LOG = LoggerFactory.getLogger(ScheduledJob.class);
-    private final ScheduleTaskRunner taskRunner;
+    private final ScheduleTaskPublisher taskPublisher;
 
-    ScheduledJob(Store store, ProgramLifecycleService lifecycleService, PropertiesResolver propertiesResolver,
-                 ListeningExecutorService taskExecutor, NamespaceQueryAdmin namespaceQueryAdmin, CConfiguration cConf) {
-      this.taskRunner = new ScheduleTaskRunner(store, lifecycleService, propertiesResolver, taskExecutor,
-                                               namespaceQueryAdmin, cConf);
+    ScheduledJob(Store store, MessagingService messagingService,
+                 PropertiesResolver propertiesResolver, CConfiguration cConf) {
+      this.taskPublisher = new ScheduleTaskPublisher(store, messagingService, propertiesResolver, cConf);
     }
 
     @Override
@@ -92,14 +93,11 @@ public class DefaultSchedulerService {
 
       ProgramId programId = new ApplicationId(namespaceId, applicationId, appVersion).program(programType, programName);
       try {
-        taskRunner.run(programId, builder.build(), userOverrides).get();
-      } catch (TaskExecutionException e) {
-        LOG.warn("Error while running program {}. {}", programId, e);
-        throw new JobExecutionException(e.getMessage(), e.getCause(), e.isRefireImmediately());
+        taskPublisher.publishNotification(programId, builder.build(), userOverrides);
       } catch (Throwable t) {
         // Do not remove this log line. The exception at higher level gets caught by the quartz scheduler and is not
         // logged in cdap master logs making it hard to debug issues.
-        LOG.warn("Error while running program {}. {}", programId, t);
+        LOG.warn("Error while publishing notification for program {}. {}", programId, t);
         throw new JobExecutionException(t.getMessage(), t.getCause(), false);
       }
     }
